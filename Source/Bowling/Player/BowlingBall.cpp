@@ -3,9 +3,11 @@
 
 #include "BowlingBall.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/WidgetComponent.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Bowling/UI/PowerBarWidget.h"
 #include "GameFramework/SpringArmComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter)
@@ -41,12 +43,36 @@ ABowlingBall::ABowlingBall()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	JumpForce = 10000.f;
+	PowerBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("PowerBarComponent"));
+	PowerBarWidgetComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+
+	MaxForce = 10000.f; 
+	CurrentForce = 0.f;
 
 	BeginLaunchTime = -1.0f;
 	EndLaunchTime = -1.0f;
 	TimeToMaxForce = 3.f;
 	
+}
+
+// Called when the game starts or when spawned
+void ABowlingBall::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UPowerBarWidget* PowerBarWidget = Cast<UPowerBarWidget>(PowerBarWidgetComponent->GetUserWidgetObject()))
+	{
+		PowerBarWidget->SetOwnerBall(this);
+	}
+
+	//Add Input Mapping Context
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
 }
 
 void ABowlingBall::Move(const FInputActionValue& Value)
@@ -74,6 +100,14 @@ void ABowlingBall::Look(const FInputActionValue& Value)
 void ABowlingBall::StartLaunchBall(const FInputActionValue& Value)
 {
 	BeginLaunchTime = GetWorld()->GetTimeSeconds();
+	GetWorld()->GetTimerManager().SetTimer(
+		PowerBarTimerHandle,
+		this,
+		&ABowlingBall::UpdateCurrentPowerValue,
+		0.01f,
+		true); //looping
+	PowerBarWidgetComponent->SetVisibility(true, true);
+
 }
 
 void ABowlingBall::LaunchBall(const FInputActionValue& Value)
@@ -84,33 +118,33 @@ void ABowlingBall::LaunchBall(const FInputActionValue& Value)
 		double DeltaLaunchTime = EndLaunchTime - BeginLaunchTime;
 
 		// This means when we hold for short time -> low force; long time (or max time) -> more force
-		float PowerMultiplier = DeltaLaunchTime / TimeToMaxForce;
-
+		float ForceMultiplier = DeltaLaunchTime / TimeToMaxForce;
+		if (ForceMultiplier > 1.0f)
+			ForceMultiplier = 1.0f;
 
 		FVector MovementVector = FollowCamera->GetForwardVector();
 
 		MovementVector.Z = 0;
 
-		StaticMeshComponent->AddForce(MovementVector * JumpForce * PowerMultiplier);
+		StaticMeshComponent->AddForce(MovementVector * MaxForce * ForceMultiplier);
 
 	}
+	//ClearTimer 
+	GetWorld()->GetTimerManager().ClearTimer(PowerBarTimerHandle);
+	PowerBarWidgetComponent->SetVisibility(false, true);
 
 }
 
-// Called when the game starts or when spawned
-void ABowlingBall::BeginPlay()
+void ABowlingBall::UpdateCurrentPowerValue()
 {
-	Super::BeginPlay();
-	
-	//Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-		}
-	}
+	double CurrentTime = GetWorld()->GetTimeSeconds();
+	double DeltaLaunchTime = CurrentTime - BeginLaunchTime;
+	float ForceMultiplier = DeltaLaunchTime / TimeToMaxForce;
+	if (ForceMultiplier > 1.0f)
+		ForceMultiplier = 1.0f;
+	CurrentForce = MaxForce * ForceMultiplier;
 }
+
 
 // Called every frame
 void ABowlingBall::Tick(float DeltaTime)

@@ -69,12 +69,20 @@ protected:
 	/** Called when launching*/
 	void LaunchBall(const FInputActionValue& Value);
 
+
+	void UpdateCurrentPowerValue();
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Jump)
-	float JumpForce;
+	float MaxForce;
+
+
+	float CurrentForce{0};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Jump)
 	double TimeToMaxForce;
+
+	UPROPERTY(VisibleAnywhere)
+	class UWidgetComponent* PowerBarWidgetComponent;
 
 public:	
 	// Called every frame
@@ -87,7 +95,12 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	FORCEINLINE float GetMaxForce() const { return MaxForce; }
+	FORCEINLINE float GetCurrentForce() const { return CurrentForce; }
 private:
 	double BeginLaunchTime;
 	double EndLaunchTime;
+
+	FTimerHandle PowerBarTimerHandle;
 };
