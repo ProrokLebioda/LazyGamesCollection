@@ -11,4 +11,10 @@ ABowlingGameMode::ABowlingGameMode()
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
+	// Set default controller class to our BP'd character 
+	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerBPClass(TEXT("/Game/Blueprints/Player/BP_BilliardPlayerController"));
+	if (PlayerControllerBPClass.Class != NULL)
+	{
+		PlayerControllerClass = PlayerControllerBPClass.Class;
+	}
 }
