@@ -170,3 +170,14 @@ void ABowlingBall::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	}
 
 }
+
+void ABowlingBall::ResetBallPosition()
+{
+	StaticMeshComponent->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+	StaticMeshComponent->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+
+	// Optionally, disable physics simulation
+	StaticMeshComponent->SetSimulatePhysics(false);
+	SetActorLocation(GetWorld()->GetFirstPlayerController()->GetSpawnLocation());
+	StaticMeshComponent->SetSimulatePhysics(true);
+}

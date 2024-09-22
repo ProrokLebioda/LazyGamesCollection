@@ -102,6 +102,9 @@ public:
 	FORCEINLINE float GetMaxForce() const { return MaxForce; }
 	FORCEINLINE float GetCurrentForce() const { return CurrentForce; }
 
+	UFUNCTION()
+	void ResetBallPosition();
+
 	FLaunchPowerChangeDelegate OnLaunchPowerChange;
 	FLaunchStartDelegate OnLaunchStart;
 	FLaunchEndDelegate OnLaunchEnd;
