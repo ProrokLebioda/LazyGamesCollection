@@ -43,8 +43,8 @@ ABowlingBall::ABowlingBall()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
-	PowerBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("PowerBarComponent"));
-	PowerBarWidgetComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	/*PowerBarWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("PowerBarComponent"));
+	PowerBarWidgetComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);*/
 
 	MaxForce = 10000.f; 
 	CurrentForce = 0.f;
@@ -59,11 +59,6 @@ ABowlingBall::ABowlingBall()
 void ABowlingBall::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (UPowerBarWidget* PowerBarWidget = Cast<UPowerBarWidget>(PowerBarWidgetComponent->GetUserWidgetObject()))
-	{
-		PowerBarWidget->SetOwnerBall(this);
-	}
 
 	//Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -99,6 +94,8 @@ void ABowlingBall::Look(const FInputActionValue& Value)
 
 void ABowlingBall::StartLaunchBall(const FInputActionValue& Value)
 {
+	OnLaunchStart.Broadcast();
+
 	BeginLaunchTime = GetWorld()->GetTimeSeconds();
 	GetWorld()->GetTimerManager().SetTimer(
 		PowerBarTimerHandle,
@@ -106,8 +103,6 @@ void ABowlingBall::StartLaunchBall(const FInputActionValue& Value)
 		&ABowlingBall::UpdateCurrentPowerValue,
 		0.01f,
 		true); //looping
-	PowerBarWidgetComponent->SetVisibility(true, true);
-
 }
 
 void ABowlingBall::LaunchBall(const FInputActionValue& Value)
@@ -131,7 +126,8 @@ void ABowlingBall::LaunchBall(const FInputActionValue& Value)
 	}
 	//ClearTimer 
 	GetWorld()->GetTimerManager().ClearTimer(PowerBarTimerHandle);
-	PowerBarWidgetComponent->SetVisibility(false, true);
+
+	OnLaunchEnd.Broadcast();
 
 }
 
@@ -143,6 +139,7 @@ void ABowlingBall::UpdateCurrentPowerValue()
 	if (ForceMultiplier > 1.0f)
 		ForceMultiplier = 1.0f;
 	CurrentForce = MaxForce * ForceMultiplier;
+	OnLaunchPowerChange.Broadcast(CurrentForce);
 }
 
 
@@ -162,7 +159,7 @@ void ABowlingBall::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
         EnhancedInputComponent->BindAction(LaunchAction, ETriggerEvent::Completed, this, &ABowlingBall::LaunchBall);
 
         // Moving
-        EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABowlingBall::Move);
+        //EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABowlingBall::Move);
 
         // Looking
         EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABowlingBall::Look);

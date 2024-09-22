@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Bowling/Player/BowlingBall.h"
 #include "PowerBarWidget.generated.h"
 
 /**
@@ -16,12 +15,12 @@ class BOWLING_API UPowerBarWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void SetOwnerBall(ABowlingBall* NewOwner) { OwnerBall = NewOwner; }
+	UFUNCTION(BlueprintCallable)
+	void SetOwner(APlayerController* NewOwner);
+	void SetOwnerBall(class ABowlingBall* NewOwner);
 
 protected:
 	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
-
-	TWeakObjectPtr<ABowlingBall> OwnerBall;
 
 	UPROPERTY( meta = (BindWidget))
 	class UProgressBar* PowerBar;
@@ -32,5 +31,10 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* MaxPowerLabel;
 
+private:
+	double MaxForce;
+
+private:
+	void UpdatePowerBarValue(double Value);
 
 };

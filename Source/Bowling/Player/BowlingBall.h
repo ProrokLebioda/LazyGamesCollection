@@ -17,6 +17,10 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FLaunchPowerChangeDelegate, double Power);
+DECLARE_MULTICAST_DELEGATE(FLaunchStartDelegate);
+DECLARE_MULTICAST_DELEGATE(FLaunchEndDelegate);
+
 UCLASS()
 class BOWLING_API ABowlingBall : public APawn
 {
@@ -69,7 +73,6 @@ protected:
 	/** Called when launching*/
 	void LaunchBall(const FInputActionValue& Value);
 
-
 	void UpdateCurrentPowerValue();
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Jump)
@@ -81,8 +84,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Jump)
 	double TimeToMaxForce;
 
-	UPROPERTY(VisibleAnywhere)
-	class UWidgetComponent* PowerBarWidgetComponent;
+	/*UPROPERTY(VisibleAnywhere)
+	class UWidgetComponent* PowerBarWidgetComponent;*/
 
 public:	
 	// Called every frame
@@ -98,6 +101,10 @@ public:
 
 	FORCEINLINE float GetMaxForce() const { return MaxForce; }
 	FORCEINLINE float GetCurrentForce() const { return CurrentForce; }
+
+	FLaunchPowerChangeDelegate OnLaunchPowerChange;
+	FLaunchStartDelegate OnLaunchStart;
+	FLaunchEndDelegate OnLaunchEnd;
 private:
 	double BeginLaunchTime;
 	double EndLaunchTime;
